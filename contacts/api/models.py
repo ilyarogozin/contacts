@@ -1,11 +1,27 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
+from imagekit.lib import Image
+from imagekit.models import ProcessedImageField
+from imagekit.processors import ResizeToFill
 
 GENDERS = [
     ('male', 'Мужчина'),
     ('female', 'Женщина'),
 ]
+WATERMARK = (
+    Image.open('watermark.jpeg').convert('RGBA')
+)
+
+
+class Watermark(object):
+    def process(self, image, watermark=WATERMARK):
+        image.paste(
+            watermark,
+            (0, 0, watermark.size[0], watermark.size[0]),
+            watermark
+        )
+        return image
 
 
 class User(AbstractUser):
@@ -24,15 +40,20 @@ class User(AbstractUser):
         },
     )
     first_name = models.CharField(
-        verbose_name='Имя', max_length=150, required=True
+        verbose_name='Имя', max_length=150, blank=False
     )
     last_name = models.CharField(
-        verbose_name='Фамилия', max_length=150, required=True
+        verbose_name='Фамилия', max_length=150, blank=False
     )
     email = models.EmailField(
-        verbose_name='Почта', max_length=254, unique=True
+        verbose_name='Почта', max_length=254, unique=True, blank=False
     )
-    avatar = models.ImageField()
+    avatar = ProcessedImageField(
+        upload_to='avatars',
+        processors=[ResizeToFill(100, 100), Watermark()],
+        format='JPEG',
+        options={'quality': 256}
+    )
     gender = models.CharField(
         verbose_name='Пол', choices=GENDERS, max_length=7
     )

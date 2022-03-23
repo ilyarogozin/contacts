@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager
 from django.core.mail import BadHeaderError, send_mail
+from geopy.geocoders import Nominatim
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -35,7 +36,20 @@ def create_user(request):
             raise ValidationError(USERNAME_ALREADY_EXISTS)
         if User.objects.filter(email=email).exists():
             raise ValidationError(EMAIL_ALREADY_EXISTS)
-        user = User.objects.create_user(username=username, email=email)
+        nom = Nominatim(user_agent='my_app')
+        city = serializer.validated_data.get('city')
+        country = serializer.validated_data.get('country')
+        address = nom.geocode(f'{ city } { country }')
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=serializer.validated_data.get('first_name'),
+            last_name=serializer.validated_data.get('last_name'),
+            avatar=serializer.validated_data.get('avatar'),
+            gender=serializer.validated_data.get('gender'),
+            longitude=address.longitude,
+            latitude=address.latitude
+        )
     user.set_password(BaseUserManager().make_random_password())
     user.save()
     confirmation_code = user.password
