@@ -3,7 +3,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.core.mail import BadHeaderError, send_mail
 from django.shortcuts import get_object_or_404
 from geopy.geocoders import Nominatim
-from rest_framework import status
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -24,6 +24,7 @@ EMAIL_ALREADY_EXISTS = 'Пользователь с таким email уже су
 MUTUAL_SYMPATHY = 'У вас взаимная симпатия!'
 YOU_LIKED = 'Вы понравились {name}! Почта участника: {email}'
 EMAIL_NOT_SENT = 'Email не был отправлен: {error}'
+ALREADY_LIKED = 'Вы уже лайкали этого пользователя!'
 
 
 @api_view(['POST'])
@@ -105,7 +106,7 @@ def get_match(request, user_id):
     user = request.user
     like = get_object_or_404(User, id=user_id)
     if like in user.like.all():
-        return Response({'alert': 'you have already liked this user'})
+        return Response({'Предупреждение': ALREADY_LIKED})
     user.like.set(User.objects.filter(id=user_id))
     likes = like.like.all()
     if user not in likes:
@@ -116,5 +117,12 @@ def get_match(request, user_id):
     email_matching = like.email
     send_mutual_sympathy(email_matching, name_user, email_user)
     send_mutual_sympathy(email_user, name_matching, email_matching)
-    data = {'email of your matching': email_matching}
+    data = {'Email вашего совпадения': email_matching}
     return Response(data, status=status.HTTP_200_OK)
+
+
+class ListUsersViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    permission_classes = (IsAuthenticated,)
+    filterset_fields = ('first_name', 'last_name', 'gender')

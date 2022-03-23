@@ -64,6 +64,10 @@ class User(AbstractUser):
         verbose_name='Широта', max_length=100, default=55.7504461
     )
     likes = models.ManyToManyField('User', blank=True, related_name="like")
+    country = models.CharField(
+        verbose_name='Страна', max_length=100, blank=True
+    )
+    city = models.CharField(verbose_name='Город', max_length=100, blank=True)
 
     class Meta:
         ordering = ('username',)
