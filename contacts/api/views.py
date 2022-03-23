@@ -1,10 +1,11 @@
 from django.conf import settings
 from django.contrib.auth.models import BaseUserManager
 from django.core.mail import BadHeaderError, send_mail
+from django.shortcuts import get_object_or_404
 from geopy.geocoders import Nominatim
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -20,6 +21,9 @@ CONFIRMATION_CODE = (
 )
 USERNAME_ALREADY_EXISTS = 'Пользователь с таким username уже существует!'
 EMAIL_ALREADY_EXISTS = 'Пользователь с таким email уже существует!'
+MUTUAL_SYMPATHY = 'У вас взаимная симпатия!'
+YOU_LIKED = 'Вы понравились {name}! Почта участника: {email}'
+EMAIL_NOT_SENT = 'Email не был отправлен: {error}'
 
 
 @api_view(['POST'])
@@ -81,3 +85,36 @@ def create_token(request):
         token = str(RefreshToken.for_user(user).access_token)
         return Response(data={'token': token}, status=status.HTTP_200_OK)
     return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+def send_mutual_sympathy(recipient, name, email):
+    try:
+        send_mail(
+            subject=MUTUAL_SYMPATHY, recipient_list=[recipient],
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            message=YOU_LIKED.format(name=name, email=email),
+            fail_silently=False
+        )
+    except BadHeaderError as error:
+        raise BadHeaderError(EMAIL_NOT_SENT.format(error=error))
+
+
+@api_view(['GET'])
+@permission_classes((IsAuthenticated,))
+def get_match(request, user_id):
+    user = request.user
+    like = get_object_or_404(User, id=user_id)
+    if like in user.like.all():
+        return Response({'alert': 'you have already liked this user'})
+    user.like.set(User.objects.filter(id=user_id))
+    likes = like.like.all()
+    if user not in likes:
+        return Response(status=status.HTTP_200_OK)
+    name_user = user.first_name
+    email_user = user.email
+    name_matching = like.first_name
+    email_matching = like.email
+    send_mutual_sympathy(email_matching, name_user, email_user)
+    send_mutual_sympathy(email_user, name_matching, email_matching)
+    data = {'email of your matching': email_matching}
+    return Response(data, status=status.HTTP_200_OK)

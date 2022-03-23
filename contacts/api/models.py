@@ -63,6 +63,7 @@ class User(AbstractUser):
     latitude = models.FloatField(
         verbose_name='Широта', max_length=100, default=55.7504461
     )
+    likes = models.ManyToManyField('User', blank=True, related_name="like")
 
     class Meta:
         ordering = ('username',)
