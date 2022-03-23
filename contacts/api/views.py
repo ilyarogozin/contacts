@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .filters import UserFilterBackend
 from .models import User
 from .serializers import ConfirmationCodeSerializer, UserSerializer
 
@@ -22,7 +23,7 @@ CONFIRMATION_CODE = (
 USERNAME_ALREADY_EXISTS = 'Пользователь с таким username уже существует!'
 EMAIL_ALREADY_EXISTS = 'Пользователь с таким email уже существует!'
 MUTUAL_SYMPATHY = 'У вас взаимная симпатия!'
-YOU_LIKED = 'Вы понравились {name}! Почта участника: {email}'
+YOU_LIKED = 'Вы понравились {name}! Почта пользователя: {email}'
 EMAIL_NOT_SENT = 'Email не был отправлен: {error}'
 ALREADY_LIKED = 'Вы уже лайкали этого пользователя!'
 
@@ -41,7 +42,7 @@ def create_user(request):
             raise ValidationError(USERNAME_ALREADY_EXISTS)
         if User.objects.filter(email=email).exists():
             raise ValidationError(EMAIL_ALREADY_EXISTS)
-        nom = Nominatim(user_agent='my_app')
+        nom = Nominatim(user_agent='contacts')
         city = serializer.validated_data.get('city')
         country = serializer.validated_data.get('country')
         address = nom.geocode(f'{ city } { country }')
@@ -52,6 +53,8 @@ def create_user(request):
             last_name=serializer.validated_data.get('last_name'),
             avatar=serializer.validated_data.get('avatar'),
             gender=serializer.validated_data.get('gender'),
+            country=country,
+            city=city,
             longitude=address.longitude,
             latitude=address.latitude
         )
@@ -125,4 +128,5 @@ class ListUsersViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     permission_classes = (IsAuthenticated,)
+    filter_backends = (UserFilterBackend,)
     filterset_fields = ('first_name', 'last_name', 'gender')

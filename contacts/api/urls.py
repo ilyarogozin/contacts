@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import create_token, create_user, get_match, ListUsersViewSet
+from .views import ListUsersViewSet, create_token, create_user, get_match
 
 app_name = 'api'
 

@@ -128,6 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# static and media files
+# static, media, email files
 static/
 media/
+sent_emails/
