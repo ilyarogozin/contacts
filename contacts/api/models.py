@@ -9,9 +9,7 @@ GENDERS = [
     ('male', 'Мужчина'),
     ('female', 'Женщина'),
 ]
-WATERMARK = (
-    Image.open('watermark.jpeg').convert('RGBA')
-)
+WATERMARK = (Image.open('watermark.jpeg').convert('RGBA'))
 
 
 class Watermark(object):
