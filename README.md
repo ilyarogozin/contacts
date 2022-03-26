@@ -1,5 +1,5 @@
 # CONTACTS
-## contacts - тестовый проект приложения для знакомств
+## contacts - api проект приложения для знакомств
 ### Авторы:
 - Ilya Rogozin https://github.com/ilyarogozin
 ### Технологии
